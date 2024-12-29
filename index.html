@@ -1,139 +1,501 @@
 <!DOCTYPE html>
-<html lang="en">
+<html dir="rtl" lang="ar">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="title" content="Email Generator & MazenSA">
-    <link rel="icon" type="image/png" href="https://api.dicebear.com/7.x/bottts/png?seed=email">
+    <title>تقييم المدن</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
-    <title>Email Generator & Archive</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <style>
+        .action-buttons {
+            transform: rotate(90deg);
+            transition: transform 0.3s ease;
+        }
+
+        .action-buttons.active {
+            transform: rotate(0deg);
+        }
+
+        .fa-ellipsis-v {
+            transform: rotate(90deg);
+            transition: transform 0.3s ease;
+        }
+
+        .fa-ellipsis-v.active {
+            transform: rotate(0deg);
+        }
+    </style>
 </head>
 
-<body class="bg-gray-50">
-    <div class="flex min-h-screen">
-        <!-- Unified Sidebar - Responsive for both mobile and desktop -->
-        <aside class="w-16 md:w-64 border-r bg-white transition-all duration-300">
-            <div class="flex flex-col h-full">
-                <div class="p-4 border-b md:block hidden">
-                    <h1 class="text-xl font-bold hidden md:block">Menu</h1>
-                </div>
-                <nav class="flex-1 flex flex-col justify-center space-y-4 px-2">
-                    <button id="generateBtn"
-                        class="w-full p-3 text-left hover:bg-gray-100 rounded-lg font-medium flex items-center justify-center md:justify-start transition-all duration-200">
-                        <i class="ph ph-plus-circle text-xl"></i>
-                        <span class="ml-2 hidden md:inline">Generate</span>
-                    </button>
-                    <button id="archiveBtn"
-                        class="w-full p-3 text-left hover:bg-gray-100 rounded-lg flex items-center justify-center md:justify-start transition-all duration-200">
-                        <i class="ph ph-archive-box text-xl"></i>
-                        <span class="ml-2 hidden md:inline">Archive</span>
-                    </button>
-                </nav>
-                <div class="p-4 border-t text-center md:text-left">
-                    <span class="hidden md:inline">Mazen Dev.</span>
-                    <span class="inline md:hidden text-sm">702</span>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="flex-1 p-8 md:pt-8 pt-20">
-            <!-- Generate View -->
-            <div id="generateView" class="space-y-6">
-                <div class="text-center p-8 bg-white rounded-lg shadow-sm">
-                    <h1 class="text-2xl font-bold">Generate Email</h1>
-                </div>
-
-                <div class="bg-white p-4 rounded-lg shadow-sm">
-                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div class="flex flex-col md:flex-row md:items-center md:gap-2">
-                            <span class="text-base md:text-lg">Email:</span>
-                            <span id="emailAddress" class="text-sm md:text-base break-all block md:inline mt-4 md:mt-0"></span>
-                        </div>
-                        <div class="flex justify-center md:justify-end gap-3 md:gap-1">
-                            <button id="generateEmailBtn" class="p-3 hover:bg-gray-100 active:bg-gray-200 rounded-lg flex items-center justify-center w-10 h-10 md:w-12 md:h-12 transition-colors" title="Generate">
-                                <i class="ph ph-plus-circle text-xl"></i>
-                            </button>
-                            <button id="getPreviousEmailBtn" class="p-3 hover:bg-gray-100 active:bg-gray-200 rounded-lg flex items-center justify-center w-10 h-10 md:w-12 md:h-12 transition-colors" title="Restore">
-                                <i class="ph ph-arrows-clockwise text-xl"></i>
-                            </button>
-                            <button id="copyBtn" class="p-3 hover:bg-gray-100 active:bg-gray-200 rounded-lg flex items-center justify-center w-10 h-10 md:w-12 md:h-12 transition-colors" title="Copy">
-                                <i class="ph ph-copy text-xl"></i>
-                            </button>
-                            <button id="deleteBtn" class="p-3 hover:bg-gray-100 active:bg-gray-200 rounded-lg flex items-center justify-center w-10 h-10 md:w-12 md:h-12 transition-colors" title="Delete">
-                                <i class="ph ph-trash text-xl"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-lg shadow-sm">
-                    <div class="grid grid-cols-4 md:grid-cols-12 gap-4">
-                        <div class="col-span-1 md:col-span-2">
-                            <div class="space-y-4 text-sm md:text-base">
-                                <div class="mb-20 mt-2 md:mt-3 md:mb-28">From:</div>
-                                <div>Subject:</div>
-                            </div>
-                        </div>
-                        <div class="col-span-3 md:col-span-10 space-y-4">
-                            <input type="text" id="emailFrom"
-                                class="w-full p-2 border rounded bg-gray-100 text-sm md:text-base" placeholder="From"
-                                readonly="">
-                            <div id="emailContent"
-                                class="w-full h-32 md:h-48 p-2 border rounded bg-gray-100 overflow-auto text-sm md:text-base">
-                            </div>
-                            <button id="archiveMessageBtn"
-                                class="w-full p-2 mt-2 bg-gray-200 hover:bg-gray-300 rounded flex items-center justify-center">
-                                <i class="ph ph-archive-box mr-2 text-lg"></i>
-                                <span class="text-sm md:text-base">Archive Message</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Update navigation buttons -->
-                <div class="flex justify-center space-x-4 mt-4" id="generateNavigation">
-                    <button id="previousEmailBtn"
-                        class="p-3 hover:bg-gray-100 rounded flex items-center space-x-2 hidden" style="display: none;">
-                        <i class="ph ph-arrow-left text-lg"></i>
-                        <span class="text-sm md:text-base">Previous</span>
-                    </button>
-                    <button id="nextEmailBtn" class="p-3 hover:bg-gray-100 rounded flex items-center space-x-2 hidden"
-                        style="display: none;">
-                        <span class="text-sm md:text-base">Next</span>
-                        <i class="ph ph-arrow-right text-lg"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Archive View -->
-            <div id="archiveView" class="space-y-6 hidden">
-                <div class="text-center p-8 bg-white rounded-lg shadow-sm">
-                    <h1 class="text-2xl font-bold">Archive Emails</h1>
-                </div>
-
-                <div class="bg-white p-4 rounded-lg shadow-sm" id="archiveEmails">
-                    <p class="text-center text-gray-500">No archived emails.</p>
-                </div>
-
-                <div class="flex justify-center space-x-4">
-                    <button id="previousArchiveBtn" class="p-3 hover:bg-gray-100 rounded flex items-center space-x-2">
-                        <i class="ph ph-arrow-left"></i>
-                        <span>Previous</span>
-                    </button>
-                    <button id="nextArchiveBtn" class="p-3 hover:bg-gray-100 rounded flex items-center space-x-2">
-                        <span>Next</span>
-                        <i class="ph ph-arrow-right"></i>
-                    </button>
-                </div>
-            </div>
-        </main>
+<body class="bg-gray-900 text-gray-100">
+    <!-- شريط المدن -->
+    <div class="bg-gray-800 shadow fixed top-0 w-full z-10">
+        <div class="max-w-full mx-auto py-4 px-4">
+            <div id="citiesList" class="flex gap-2 overflow-x-auto whitespace-nowrap pb-2"></div>
+        </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- المحتوى الرئيسي -->
+    <div id="mainContent" class="max-w-4xl mx-auto pt-24 px-4 pb-24">
+        <div class="text-center text-gray-400 mt-12">اختر مدينة من الأعلى لعرض التقييمات</div>
+    </div>
+
+    <!-- زر إضافة تقييم -->
+    <button id="addReviewBtn" onclick="openModal()"
+        class="fixed bottom-6 left-6 w-14 h-14 bg-blue-600 rounded-full items-center justify-center shadow-lg hover:bg-blue-700 transition-colors hidden">
+        <i class="fas fa-plus"></i>
+    </button>
+
+    <!-- نموذج التقييم -->
+    <div id="reviewModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 items-center justify-center p-4 hidden">
+        <div class="bg-gray-800 rounded-xl w-full max-w-lg shadow-2xl">
+            <div class="flex justify-between items-center p-4">
+                <h2 id="modalTitle" class="text-xl font-bold text-gray-100">إضافة تقييم</h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="p-6">
+                <form id="reviewForm" class="space-y-6" onsubmit="handleReviewSubmit(event)">
+                    <div>
+                        <label class="block mb-3 font-medium text-gray-300">التقييم</label>
+                        <div id="ratingStars" class="flex gap-2 justify-center bg-gray-700 p-4 rounded-lg"></div>
+                    </div>
+
+                    <div>
+                        <label class="block mb-3 font-medium text-gray-300">تعليقك</label>
+                        <textarea id="reviewText"
+                            class="w-full p-4 rounded-lg bg-gray-700 text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            rows="4" placeholder="اكتب تعليقك هنا..." dir="rtl"></textarea>
+                    </div>
+
+                    <div class="flex gap-3 justify-end">
+                        <button type="button" onclick="closeModal()"
+                            class="px-6 py-2.5 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors">
+                            إلغاء
+                        </button>
+                        <button type="submit" id="submitBtn"
+                            class="px-6 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                            إرسال التقييم
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA9lfQNMzI7-6P2GkskdJODE3yG-sVeAgg",
+            authDomain: "doctor-e941b.firebaseapp.com",
+            databaseURL: "https://doctor-e941b-default-rtdb.firebaseio.com",
+            projectId: "doctor-e941b",
+            storageBucket: "doctor-e941b.firebasestorage.app",
+            messagingSenderId: "702360631722",
+            appId: "1:702360631722:web:791c786562f43b3428d3d3",
+            measurementId: "G-6RY5P2T1CJ"
+        };
+
+
+        // تهيئة Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        let currentUser = null;
+
+        // تسجيل الدخول كمستخدم مجهول
+        firebase.auth().signInAnonymously()
+            .then((userCredential) => {
+                currentUser = userCredential.user;
+                loadReviews();
+            })
+            .catch((error) => {
+                console.error("خطأ في تسجيل الدخول:", error);
+            });
+
+        let reviews = {};
+
+        function loadReviews() {
+            database.ref('reviews').on('value', (snapshot) => {
+                reviews = snapshot.val() || {};
+                updateUI();
+            });
+        }
+
+        function renderCities() {
+            const citiesList = document.getElementById('citiesList');
+            const sortedCities = [...cities].sort((a, b) => {
+                const aCount = reviews[a.id]?.length || 0;
+                const bCount = reviews[b.id]?.length || 0;
+                return bCount - aCount;
+            });
+
+            citiesList.innerHTML = sortedCities.map(city => {
+                const reviewCount = reviews[city.id]?.length || 0;
+                const displayCount = reviewCount > 99 ? '99+' : reviewCount;
+                return `
+                    <button
+                        onclick="selectCity(${city.id})"
+                        class="px-4 py-2 rounded-lg text-sm transition-all ${selectedCity === city.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
+                    }"
+                    >
+                        ${city.name}
+                        ${reviewCount ? `
+                            <span class="mr-2 bg-blue-500 text-xs px-2 py-1 rounded-full">
+                                ${displayCount}
+                            </span>
+                        ` : ''}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function updateMainContent() {
+            const mainContent = document.getElementById('mainContent');
+            if (!selectedCity) {
+                mainContent.innerHTML = '<div class="text-center text-gray-400 mt-12">اختر مدينة من الأعلى لعرض التقييمات</div>';
+                return;
+            }
+
+            const city = cities.find(c => c.id === selectedCity);
+            const cityReviews = reviews[selectedCity] || [];
+
+            // ترتيب التقييمات حسب عدد الإعجابات
+            const sortedReviews = [...cityReviews].sort((a, b) => {
+                const aLikes = (a.likes ? Object.keys(a.likes).length : 0) - (a.dislikes ? Object.keys(a.dislikes).length : 0);
+                const bLikes = (b.likes ? Object.keys(b.likes).length : 0) - (b.dislikes ? Object.keys(b.dislikes).length : 0);
+                return bLikes - aLikes;
+            });
+
+            mainContent.innerHTML = `
+                <h2 class="text-2xl font-bold text-center mb-8">${city.name}</h2>
+                ${sortedReviews.length ? `
+                    <div class="grid gap-6">
+                        ${sortedReviews.map((review, index) => {
+                const isReviewer = review.userId === currentUser.uid;
+                const likesCount = review.likes ? Object.keys(review.likes).length : 0;
+                const dislikesCount = review.dislikes ? Object.keys(review.dislikes).length : 0;
+                const hasLiked = review.likes && review.likes[currentUser.uid];
+                const hasDisliked = review.dislikes && review.dislikes[currentUser.uid];
+
+                return `
+                            <div class="bg-gray-800 rounded-lg p-6">
+                                <div class="flex justify-between items-center mb-6">
+                                    <div class="flex gap-1">
+                                        ${Array(5).fill(0).map((_, i) => `
+                                            <i class="fas fa-star ${i < review.rating ? 'text-yellow-400' : 'text-gray-500'} text-xl"></i>
+                                        `).join('')}
+                                    </div>
+                                    ${isReviewer ? `
+                                        <button onclick="toggleActions(${index})" class="px-3 py-1.5 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white transition-colors">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                                
+                                <p class="text-gray-300 mb-6 text-right">${review.text}</p>
+                                
+                                ${isReviewer ? `
+                                    <div id="actions-${index}" class="hidden flex-col gap-2 mb-4">
+                                        <button onclick="editReview(${index})" class="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white transition-colors">
+                                            <i class="fas fa-edit ml-2"></i>
+                                            تعديل
+                                        </button>
+                                        <button onclick="deleteReview(${index})" class="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white transition-colors">
+                                            <i class="fas fa-trash ml-2"></i>
+                                            حذف
+                                        </button>
+                                    </div>
+                                ` : ''}
+                                
+                                <div class="flex gap-4 justify-start items-center">
+                                    ${!isReviewer ? `
+                                        <button onclick="handleVote(${index}, 'like')" 
+                                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg ${hasLiked ? 'bg-blue-600' : 'bg-gray-700'} text-gray-300 hover:bg-gray-600 hover:text-white transition-colors">
+                                            <i class="fas fa-thumbs-up"></i>
+                                            <span>${likesCount}</span>
+                                        </button>
+                                        <button onclick="handleVote(${index}, 'dislike')"
+                                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg ${hasDisliked ? 'bg-red-600' : 'bg-gray-700'} text-gray-300 hover:bg-gray-600 hover:text-white transition-colors">
+                                            <i class="fas fa-thumbs-down"></i>
+                                            <span>${dislikesCount}</span>
+                                        </button>
+                                    ` : `
+                                        <div class="flex items-center gap-4">
+                                            <div class="flex items-center gap-2">
+                                                <i class="fas fa-thumbs-up text-gray-500"></i>
+                                                <span>${likesCount}</span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <i class="fas fa-thumbs-down text-gray-500"></i>
+                                                <span>${dislikesCount}</span>
+                                            </div>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        `}).join('')}
+                    </div>
+                ` : '<div class="text-center text-gray-400 py-12">لا توجد تقييمات بعد</div>'}
+            `;
+        }
+
+        function handleVote(reviewIndex, voteType) {
+            const review = reviews[selectedCity][reviewIndex];
+            const userId = currentUser.uid;
+            const reviewRef = database.ref(`reviews/${selectedCity}/${reviewIndex}`);
+
+            if (!review[voteType + 's']) review[voteType + 's'] = {};
+
+            if (review[voteType + 's'][userId]) {
+                // إلغاء التصويت
+                reviewRef.child(voteType + 's/' + userId).remove();
+            } else {
+                // إضافة تصويت جديد
+                const oppositeType = voteType === 'like' ? 'dislike' : 'like';
+                reviewRef.child(oppositeType + 's/' + userId).remove();
+                reviewRef.child(voteType + 's/' + userId).set(true);
+            }
+        }
+
+        function handleReviewSubmit(e) {
+            e.preventDefault();
+            const text = document.getElementById('reviewText').value.trim();
+
+            if (text && currentRating > 0) {
+                const review = {
+                    text,
+                    rating: currentRating,
+                    userId: currentUser.uid,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                if (editingReviewId !== null) {
+                    database.ref(`reviews/${selectedCity}/${editingReviewId}`).update(review);
+                } else {
+                    if (!reviews[selectedCity]) reviews[selectedCity] = [];
+                    database.ref(`reviews/${selectedCity}`).push(review);
+                }
+
+                closeModal();
+            }
+        }
+
+        const cities = [
+            { id: 1, name: 'جدة' },
+            { id: 2, name: 'مكة المكرمة' },
+            { id: 3, name: 'المدينة المنورة' },
+            { id: 4, name: 'الرياض' },
+            { id: 5, name: 'الدمام' },
+            { id: 6, name: 'الطائف' },
+            { id: 7, name: 'تبوك' },
+            { id: 8, name: 'أبها' },
+            { id: 9, name: 'الخبر' },
+            { id: 10, name: 'القصيم' }
+        ];
+
+        let selectedCity = null;
+        let currentRating = 0;
+        let editingReviewId = null;
+
+        function renderCities() {
+            const citiesList = document.getElementById('citiesList');
+            const sortedCities = [...cities].sort((a, b) => {
+                const aCount = reviews[a.id]?.length || 0;
+                const bCount = reviews[b.id]?.length || 0;
+                return bCount - aCount;
+            });
+
+            citiesList.innerHTML = sortedCities.map(city => `
+                <button
+                    onclick="selectCity(${city.id})"
+                    class="px-4 py-2 rounded-lg text-sm transition-all ${selectedCity === city.id
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
+                }"
+                >
+                    ${city.name}
+                    ${reviews[city.id]?.length ? `
+                        <span class="mr-2 bg-blue-500 text-xs px-2 py-1 rounded-full">
+                            ${reviews[city.id].length}
+                        </span>
+                    ` : ''}
+                </button>
+            `).join('');
+        }
+
+        function setupRatingStars() {
+            const starsContainer = document.getElementById('ratingStars');
+            starsContainer.innerHTML = '';
+            for (let i = 1; i <= 5; i++) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'p-2 transition-transform hover:scale-110';
+                button.onclick = () => setRating(i);
+                button.innerHTML = `<i class="fas fa-star ${i <= currentRating ? 'text-yellow-400' : 'text-gray-500'} text-2xl"></i>`;
+                starsContainer.appendChild(button);
+            }
+        }
+
+        function setRating(rating) {
+            currentRating = rating;
+            setupRatingStars();
+        }
+
+        function selectCity(cityId) {
+            selectedCity = cityId;
+            updateUI();
+        }
+
+        function updateUI() {
+            renderCities();
+            updateMainContent();
+            const addBtn = document.getElementById('addReviewBtn');
+            addBtn.style.display = selectedCity ? 'flex' : 'none';
+        }
+
+        function updateMainContent() {
+            const mainContent = document.getElementById('mainContent');
+            if (!selectedCity) {
+                mainContent.innerHTML = '<div class="text-center text-gray-400 mt-12">اختر مدينة من الأعلى لعرض التقييمات</div>';
+                return;
+            }
+
+            const city = cities.find(c => c.id === selectedCity);
+            const cityReviews = reviews[selectedCity] || [];
+
+            mainContent.innerHTML = `
+                <h2 class="text-2xl font-bold text-center mb-8">${city.name}</h2>
+                ${cityReviews.length ? `
+                    <div class="grid gap-6">
+                        ${cityReviews.map((review, index) => `
+                            <div class="bg-gray-800 rounded-lg p-6">
+                                <div class="flex justify-between items-center mb-6">
+                                    <div class="flex gap-1">
+                                        ${Array(5).fill(0).map((_, i) => `
+                                            <i class="fas fa-star ${i < review.rating ? 'text-yellow-400' : 'text-gray-500'} text-xl"></i>
+                                        `).join('')}
+                                    </div>
+                                    <button onclick="toggleActions(${index})" class="px-3 py-1.5 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white transition-colors">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </div>
+                                
+                                <p class="text-gray-300 mb-6 text-right">${review.text}</p>
+                                
+                                <div id="actions-${index}" class="hidden flex-col gap-2 transition-all duration-300">
+                                    <button onclick="editReview(${index})" class="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white transition-colors">
+                                        <i class="fas fa-edit ml-2"></i>
+                                        تعديل
+                                    </button>
+                                    <button onclick="deleteReview(${index})" class="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white transition-colors">
+                                        <i class="fas fa-trash ml-2"></i>
+                                        حذف
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : '<div class="text-center text-gray-400 py-12">لا توجد تقييمات بعد</div>'}
+            `;
+        }
+
+        function toggleActions(reviewId) {
+            const actionsDiv = document.getElementById(`actions-${reviewId}`);
+            const icon = event.currentTarget.querySelector('.fa-ellipsis-v');
+
+            if (actionsDiv.classList.contains('hidden')) {
+                // فتح القائمة
+                actionsDiv.classList.remove('hidden', 'flex-col');
+                actionsDiv.classList.add('flex', 'flex-row');
+                icon.classList.add('active');
+            } else {
+                // إغلاق القائمة
+                actionsDiv.classList.remove('flex', 'flex-row');
+                actionsDiv.classList.add('hidden', 'flex-col');
+                icon.classList.remove('active');
+            }
+        }
+
+        function openModal(reviewId = null) {
+            editingReviewId = reviewId;
+            const modal = document.getElementById('reviewModal');
+            const title = document.getElementById('modalTitle');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (reviewId !== null) {
+                const review = reviews[selectedCity][reviewId];
+                document.getElementById('reviewText').value = review.text;
+                currentRating = review.rating;
+                title.textContent = 'تعديل التقييم';
+                submitBtn.textContent = 'تحديث';
+            } else {
+                document.getElementById('reviewText').value = '';
+                currentRating = 0;
+                title.textContent = 'إضافة تقييم';
+                submitBtn.textContent = 'إرسال';
+            }
+
+            setupRatingStars();
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('reviewModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            editingReviewId = null;
+            currentRating = 0;
+            document.getElementById('reviewText').value = '';
+        }
+
+        function handleReviewSubmit(e) {
+            e.preventDefault();
+            const text = document.getElementById('reviewText').value.trim();
+
+            if (text && currentRating > 0) {
+                const review = {
+                    text,
+                    rating: currentRating
+                };
+
+                if (!reviews[selectedCity]) {
+                    reviews[selectedCity] = [];
+                }
+
+                if (editingReviewId !== null) {
+                    reviews[selectedCity][editingReviewId] = review;
+                } else {
+                    reviews[selectedCity].push(review);
+                }
+
+                closeModal();
+                updateUI();
+            }
+        }
+
+        function editReview(reviewId) {
+            openModal(reviewId);
+        }
+
+        function deleteReview(reviewId) {
+            if (confirm('هل أنت متأكد من حذف هذا التقييم؟')) {
+                reviews[selectedCity].splice(reviewId, 1);
+                updateUI();
+            }
+        }
+
+        setupRatingStars();
+        updateUI();
+    </script>
 </body>
 
 </html>
