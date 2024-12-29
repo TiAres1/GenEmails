@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="title" content="Email Generator & MazenSA">
+    <link rel="icon" type="image/png" href="https://api.dicebear.com/7.x/bottts/png?seed=email">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <title>Email Generator & Archive</title>
+</head>
+
+<body class="bg-gray-50">
+    <div class="flex min-h-screen">
+        <!-- Unified Sidebar - Responsive for both mobile and desktop -->
+        <aside class="w-16 md:w-64 border-r bg-white transition-all duration-300">
+            <div class="flex flex-col h-full">
+                <div class="p-4 border-b md:block hidden">
+                    <h1 class="text-xl font-bold hidden md:block">Menu</h1>
+                </div>
+                <nav class="flex-1 flex flex-col justify-center space-y-4 px-2">
+                    <button id="generateBtn"
+                        class="w-full p-3 text-left hover:bg-gray-100 rounded-lg font-medium flex items-center justify-center md:justify-start transition-all duration-200">
+                        <i class="ph ph-plus-circle text-xl"></i>
+                        <span class="ml-2 hidden md:inline">Generate</span>
+                    </button>
+                    <button id="archiveBtn"
+                        class="w-full p-3 text-left hover:bg-gray-100 rounded-lg flex items-center justify-center md:justify-start transition-all duration-200">
+                        <i class="ph ph-archive-box text-xl"></i>
+                        <span class="ml-2 hidden md:inline">Archive</span>
+                    </button>
+                </nav>
+                <div class="p-4 border-t text-center md:text-left">
+                    <span class="hidden md:inline">Mazen Dev.</span>
+                    <span class="inline md:hidden text-sm">702</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-8 md:pt-8 pt-20">
+            <!-- Generate View -->
+            <div id="generateView" class="space-y-6">
+                <div class="text-center p-8 bg-white rounded-lg shadow-sm">
+                    <h1 class="text-2xl font-bold">Generate Email</h1>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow-sm">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div class="flex flex-col md:flex-row md:items-center md:gap-2">
+                            <span class="text-base md:text-lg">Email:</span>
+                            <span id="emailAddress" class="text-sm md:text-base break-all block md:inline mt-4 md:mt-0"></span>
+                        </div>
+                        <div class="flex justify-center md:justify-end gap-3 md:gap-1">
+                            <button id="generateEmailBtn" class="p-3 hover:bg-gray-100 active:bg-gray-200 rounded-lg flex items-center justify-center w-10 h-10 md:w-12 md:h-12 transition-colors" title="Generate">
+                                <i class="ph ph-plus-circle text-xl"></i>
+                            </button>
+                            <button id="getPreviousEmailBtn" class="p-3 hover:bg-gray-100 active:bg-gray-200 rounded-lg flex items-center justify-center w-10 h-10 md:w-12 md:h-12 transition-colors" title="Restore">
+                                <i class="ph ph-arrows-clockwise text-xl"></i>
+                            </button>
+                            <button id="copyBtn" class="p-3 hover:bg-gray-100 active:bg-gray-200 rounded-lg flex items-center justify-center w-10 h-10 md:w-12 md:h-12 transition-colors" title="Copy">
+                                <i class="ph ph-copy text-xl"></i>
+                            </button>
+                            <button id="deleteBtn" class="p-3 hover:bg-gray-100 active:bg-gray-200 rounded-lg flex items-center justify-center w-10 h-10 md:w-12 md:h-12 transition-colors" title="Delete">
+                                <i class="ph ph-trash text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow-sm">
+                    <div class="grid grid-cols-4 md:grid-cols-12 gap-4">
+                        <div class="col-span-1 md:col-span-2">
+                            <div class="space-y-4 text-sm md:text-base">
+                                <div class="mb-20 mt-2 md:mt-3 md:mb-28">From:</div>
+                                <div>Subject:</div>
+                            </div>
+                        </div>
+                        <div class="col-span-3 md:col-span-10 space-y-4">
+                            <input type="text" id="emailFrom"
+                                class="w-full p-2 border rounded bg-gray-100 text-sm md:text-base" placeholder="From"
+                                readonly="">
+                            <div id="emailContent"
+                                class="w-full h-32 md:h-48 p-2 border rounded bg-gray-100 overflow-auto text-sm md:text-base">
+                            </div>
+                            <button id="archiveMessageBtn"
+                                class="w-full p-2 mt-2 bg-gray-200 hover:bg-gray-300 rounded flex items-center justify-center">
+                                <i class="ph ph-archive-box mr-2 text-lg"></i>
+                                <span class="text-sm md:text-base">Archive Message</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Update navigation buttons -->
+                <div class="flex justify-center space-x-4 mt-4" id="generateNavigation">
+                    <button id="previousEmailBtn"
+                        class="p-3 hover:bg-gray-100 rounded flex items-center space-x-2 hidden" style="display: none;">
+                        <i class="ph ph-arrow-left text-lg"></i>
+                        <span class="text-sm md:text-base">Previous</span>
+                    </button>
+                    <button id="nextEmailBtn" class="p-3 hover:bg-gray-100 rounded flex items-center space-x-2 hidden"
+                        style="display: none;">
+                        <span class="text-sm md:text-base">Next</span>
+                        <i class="ph ph-arrow-right text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Archive View -->
+            <div id="archiveView" class="space-y-6 hidden">
+                <div class="text-center p-8 bg-white rounded-lg shadow-sm">
+                    <h1 class="text-2xl font-bold">Archive Emails</h1>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow-sm" id="archiveEmails">
+                    <p class="text-center text-gray-500">No archived emails.</p>
+                </div>
+
+                <div class="flex justify-center space-x-4">
+                    <button id="previousArchiveBtn" class="p-3 hover:bg-gray-100 rounded flex items-center space-x-2">
+                        <i class="ph ph-arrow-left"></i>
+                        <span>Previous</span>
+                    </button>
+                    <button id="nextArchiveBtn" class="p-3 hover:bg-gray-100 rounded flex items-center space-x-2">
+                        <span>Next</span>
+                        <i class="ph ph-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
