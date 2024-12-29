@@ -7,9 +7,9 @@
     <title>تقييم المدن</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-auth-compat.js"></script>
     <style>
         .action-buttons {
             transform: rotate(90deg);
@@ -102,29 +102,64 @@
             measurementId: "G-6RY5P2T1CJ"
         };
 
+        // المتغيرات العامة
+        let selectedCity = null;
+        let currentRating = 0;
+        let editingReviewId = null;
+        let reviews = {};
+
+        // إنشاء أو استعادة معرف المستخدم
+        const currentUser = {
+            uid: localStorage.getItem('userId') || ('anonymous-' + Math.random().toString(36).substr(2, 9))
+        };
+        // حفظ معرف المستخدم
+        localStorage.setItem('userId', currentUser.uid);
 
         // تهيئة Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        let currentUser = null;
 
-        // تسجيل الدخول كمستخدم مجهول
-        firebase.auth().signInAnonymously()
-            .then((userCredential) => {
-                currentUser = userCredential.user;
-                loadReviews();
-            })
-            .catch((error) => {
-                console.error("خطأ في تسجيل الدخول:", error);
-            });
-
-        let reviews = {};
+        // تحميل التقييمات مباشرة بدون انتظار تسجيل الدخول
+        loadReviews();
 
         function loadReviews() {
             database.ref('reviews').on('value', (snapshot) => {
                 reviews = snapshot.val() || {};
+                // تحديث التقييمات المحلية
+                updateLocalReviews();
+                updateUI();
+            }, (error) => {
+                console.error("خطأ في تحميل التقييمات:", error);
+                // استخدام التقييمات المحلية في حالة الخطأ
+                reviews = getLocalReviews();
                 updateUI();
             });
+        }
+
+        // حفظ التقييمات في LocalStorage
+        function updateLocalReviews() {
+            const userReviews = {};
+            Object.keys(reviews).forEach(cityId => {
+                const cityReviews = reviews[cityId];
+                if (Array.isArray(cityReviews)) {
+                    cityReviews.forEach((review, index) => {
+                        if (review.userId === currentUser.uid) {
+                            if (!userReviews[cityId]) userReviews[cityId] = {};
+                            userReviews[cityId][index] = review;
+                        }
+                    });
+                }
+            });
+            localStorage.setItem('userReviews', JSON.stringify(userReviews));
+        }
+
+        // استرجاع التقييمات من LocalStorage
+        function getLocalReviews() {
+            try {
+                return JSON.parse(localStorage.getItem('userReviews')) || {};
+            } catch {
+                return {};
+            }
         }
 
         function renderCities() {
@@ -252,16 +287,19 @@
             const userId = currentUser.uid;
             const reviewRef = database.ref(`reviews/${selectedCity}/${reviewIndex}`);
 
-            if (!review[voteType + 's']) review[voteType + 's'] = {};
+            try {
+                if (!review[voteType + 's']) review[voteType + 's'] = {};
 
-            if (review[voteType + 's'][userId]) {
-                // إلغاء التصويت
-                reviewRef.child(voteType + 's/' + userId).remove();
-            } else {
-                // إضافة تصويت جديد
-                const oppositeType = voteType === 'like' ? 'dislike' : 'like';
-                reviewRef.child(oppositeType + 's/' + userId).remove();
-                reviewRef.child(voteType + 's/' + userId).set(true);
+                if (review[voteType + 's'][userId]) {
+                    reviewRef.child(voteType + 's/' + userId).remove();
+                } else {
+                    const oppositeType = voteType === 'like' ? 'dislike' : 'like';
+                    reviewRef.child(oppositeType + 's/' + userId).remove();
+                    reviewRef.child(voteType + 's/' + userId).set(true);
+                }
+            } catch (error) {
+                console.error("خطأ في التصويت:", error);
+                // يمكن إضافة معالجة الخطأ هنا
             }
         }
 
@@ -274,17 +312,32 @@
                     text,
                     rating: currentRating,
                     userId: currentUser.uid,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                    timestamp: Date.now()
                 };
 
-                if (editingReviewId !== null) {
-                    database.ref(`reviews/${selectedCity}/${editingReviewId}`).update(review);
-                } else {
-                    if (!reviews[selectedCity]) reviews[selectedCity] = [];
-                    database.ref(`reviews/${selectedCity}`).push(review);
+                try {
+                    if (editingReviewId !== null) {
+                        database.ref(`reviews/${selectedCity}/${editingReviewId}`).update(review);
+                    } else {
+                        if (!reviews[selectedCity]) reviews[selectedCity] = [];
+                        database.ref(`reviews/${selectedCity}`).push(review);
+                    }
+                    // حفظ التقييم محلياً
+                    const localReviews = getLocalReviews();
+                    if (!localReviews[selectedCity]) localReviews[selectedCity] = {};
+                    localReviews[selectedCity][editingReviewId || Date.now()] = review;
+                    localStorage.setItem('userReviews', JSON.stringify(localReviews));
+                    
+                    closeModal();
+                } catch (error) {
+                    console.error("خطأ في إرسال التقييم:", error);
+                    // في حالة الخطأ، نحفظ محلياً فقط
+                    const localReviews = getLocalReviews();
+                    if (!localReviews[selectedCity]) localReviews[selectedCity] = {};
+                    localReviews[selectedCity][Date.now()] = review;
+                    localStorage.setItem('userReviews', JSON.stringify(localReviews));
+                    closeModal();
                 }
-
-                closeModal();
             }
         }
 
@@ -300,10 +353,6 @@
             { id: 9, name: 'الخبر' },
             { id: 10, name: 'القصيم' }
         ];
-
-        let selectedCity = null;
-        let currentRating = 0;
-        let editingReviewId = null;
 
         function renderCities() {
             const citiesList = document.getElementById('citiesList');
@@ -488,8 +537,17 @@
 
         function deleteReview(reviewId) {
             if (confirm('هل أنت متأكد من حذف هذا التقييم؟')) {
-                reviews[selectedCity].splice(reviewId, 1);
-                updateUI();
+                try {
+                    database.ref(`reviews/${selectedCity}/${reviewId}`).remove();
+                    // حذف التقييم محلياً
+                    const localReviews = getLocalReviews();
+                    if (localReviews[selectedCity] && localReviews[selectedCity][reviewId]) {
+                        delete localReviews[selectedCity][reviewId];
+                        localStorage.setItem('userReviews', JSON.stringify(localReviews));
+                    }
+                } catch (error) {
+                    console.error("خطأ في حذف التقييم:", error);
+                }
             }
         }
 
